@@ -1,22 +1,41 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
+import logger from "../utils/logger";
 
-// Assuming `err` has the same structure as the ApiError class
+// Extending Error interface for custom ApiError properties
 interface ApiError extends Error {
     statusCode?: number;
-    errors?: string[]; // Add this if you want to include validation errors
+    errors?: string[]; // Optional field for validation or specific error messages
 }
 
-const errorHandler = (err: ApiError, req: Request, res: Response, next: NextFunction): void => {
-    const statusCode = err.statusCode || 500; // Default to 500 if no status code is set
-    const message = err.message || "Internal Server Error";
+const errorHandler = (
+    err: ApiError,
+    req: Request,
+    res: Response,
+    next: NextFunction
+): void => {
+    const statusCode = err.statusCode || 500;
+    const isInternalError = statusCode === 500;
+    const message = isInternalError ? "Internal Server Error" : err.message;
 
-    
+    // Log the error for debugging purposes
+    if (statusCode === 500)
+        logger.error(
+            `Status: ${statusCode} - Message: ${err.message}`,
+            err.errors
+        );
+    else
+        logger.warn(
+            `Status: ${statusCode} - Message: ${err.message}`,
+            err.errors
+        );
 
+    // Send error response
     res.status(statusCode).json({
+        success: false,
         status: "error",
         statusCode,
         message,
-        ...(err.errors && { errors: err.errors }), // Include errors if present
+        ...(err.errors && { errors: err.errors }), // Include additional error details if available
     });
 };
 
