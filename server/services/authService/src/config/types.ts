@@ -1,9 +1,9 @@
 interface DBConfig {
-  url: string;
+    url: string;
 }
 
 export interface Config {
-  development: DBConfig;
-  test: DBConfig;
-  production: DBConfig;
+    development: DBConfig;
+    test: DBConfig;
+    production: DBConfig;
 }

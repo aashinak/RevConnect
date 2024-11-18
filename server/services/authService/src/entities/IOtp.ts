@@ -1,5 +1,6 @@
 export interface IOtp {
-  email: string;
-  otp: string;
-  otpCreatedAt: Date;
+    email: string;
+    otp: string;
+    otpReason: string;
+    otpCreatedAt: Date;
 }
