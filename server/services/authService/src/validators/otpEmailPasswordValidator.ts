@@ -1,23 +1,23 @@
 import { body } from "express-validator";
 
-export const userValidationRules = () => {
+export const otpEmailPasswordValidationRules = () => {
     return [
-        // Validate and sanitize the name
-        body("name")
-            .trim()
-            .isString()
-            .withMessage("Name must be a string")
-            .isLength({ min: 1, max: 50 })
-            .withMessage("Name is required and must not exceed 50 characters")
-            .matches(/^[a-zA-Z\s]*$/)
-            .withMessage("Name must only contain letters and spaces"),
-
         // Validate and sanitize the email
         body("email")
             .trim()
             .isEmail()
             .withMessage("Enter a valid email address")
             .normalizeEmail(),
+
+        // Validate the OTP
+        body("otp")
+            .trim()
+            .notEmpty()
+            .withMessage("OTP is required")
+            .isNumeric()
+            .withMessage("OTP must be a numeric value")
+            .isLength({ min: 6, max: 6 })
+            .withMessage("OTP must be 6 digits long"),
 
         // Validate and secure the password
         body("password")
