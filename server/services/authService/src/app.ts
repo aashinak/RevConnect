@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express, { Application } from "express";
-// import cookieParser from "cookie-parser";
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import morgan from "morgan";
 import logger from "./utils/logger";
@@ -8,11 +8,10 @@ import router from "./routes/authRoutes";
 import errorHandler from "./middlewares/errorHandler";
 import limiter from "./middlewares/rateLimiter";
 
-
 const app: Application = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use(cookieParser());
+app.use(cookieParser());
 app.use(cors());
 
 // log formating
@@ -37,9 +36,9 @@ app.use(
 app.use(limiter);
 
 // router
-app.use("/api/v1", router);
+app.use("/api/v1/auth", router);
 
 // errorHandling middleware
-app.use(errorHandler)
+app.use(errorHandler);
 
 export default app;
