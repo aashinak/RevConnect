@@ -1,0 +1,23 @@
+# Base Node.js image
+FROM node:20-alpine
+
+# Set the working directory inside the container
+WORKDIR /usr/src/app
+
+# Copy package.json and package-lock.json for dependency installation
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the entire project to the container
+COPY . .
+
+# Build the TypeScript files
+RUN npm run build
+
+# Expose the application port
+EXPOSE 3001
+
+# Set the command to run the app
+CMD ["node", "dist/index.js"]
