@@ -1,32 +1,47 @@
-import { OtpRepository } from "../../repository/otpRepository";
 import { UserRepository } from "../../repository/userRepository";
+import { OtpRepository } from "../../repository/otpRepository";
 import { ApiError } from "../../utils/ApiError";
 import { OtpAuth } from "../../utils/hashOtp";
 import logger from "../../utils/logger";
+import redisClient from "../../utils/redis-client";
 
-const otpRepo = new OtpRepository();
 const userRepo = new UserRepository();
+const otpRepo = new OtpRepository();
 const otpAuth = new OtpAuth();
 
 async function verifyOtp(otp: number, email: string) {
-    // Retrieve stored OTP document by email
-    const storeOtpDoc = await otpRepo.findOtpByEmail(email);
-    if (!storeOtpDoc) {
-        throw new ApiError(404, `OTP not found for email ${email}`);
+    // Retrieve user
+    const user = await userRepo.findUserByEmail(email);
+    if (!user) {
+        logger.warn(`Email verification attempt for non-existing user: ${email}`);
+        throw new ApiError(404, "User not found");
     }
-    if (storeOtpDoc.otpReason !== "email_verification") {
-        logger.warn(
-            `OTP for email ${email} is not valid for email verification`
-        );
-        throw new ApiError(400, "Invalid OTP for email verification");
+
+    // Retrieve OTP and reason (Redis first, then fallback to database)
+    const otpData = await redisClient.hgetall(`otp:${user._id}`);
+    const storedOtp = otpData?.otp || (await otpRepo.findOtpByEmail(email))?.otp;
+    const reason =
+        otpData?.reason || (await otpRepo.findOtpByEmail(email))?.otpReason;
+
+    if (!storedOtp || !reason) {
+        logger.warn(`OTP not found for email: ${email}`);
+        throw new ApiError(404, "OTP not found");
     }
-    // Compare the provided OTP with the hashed OTP in the database
-    const isOtpVerified = await otpAuth.compareOtp(otp, storeOtpDoc.otp);
-    if (!isOtpVerified) {
+
+    if (reason !== "email_verification") {
+        logger.warn(`Invalid OTP reason for email: ${email}`);
         throw new ApiError(400, "Invalid OTP");
     }
 
-    // OTP verified successfully; delete it from database
+    // Verify OTP
+    const isOtpVerified = await otpAuth.compareOtp(otp, storedOtp);
+    if (!isOtpVerified) {
+        logger.warn(`Invalid OTP provided for email: ${email}`);
+        throw new ApiError(400, "Invalid OTP");
+    }
+
+    // Clean up OTP from Redis or database
+    await redisClient.del(`otp:${user._id}`);
     await otpRepo.deleteOtp(email);
 
     // Update user's verification status
@@ -34,12 +49,12 @@ async function verifyOtp(otp: number, email: string) {
         isVerified: true,
     });
     if (!updatedUser) {
+        logger.error(`Failed to update verification status for user: ${email}`);
         throw new ApiError(500, "User verification update failed");
     }
 
-    // Log success and return the updated user document
-    logger.info(`OTP verified and user ${email} updated successfully`);
-    return updatedUser;
+    logger.info(`User verification successful for email: ${email}`);
+    return { message: "OTP verification successful", user: updatedUser };
 }
 
 export default verifyOtp;

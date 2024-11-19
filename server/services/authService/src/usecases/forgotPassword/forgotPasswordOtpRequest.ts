@@ -6,6 +6,7 @@ import generateOtp from "../../utils/generateOtp";
 import { OtpAuth } from "../../utils/hashOtp";
 import logger from "../../utils/logger";
 import emailFormat from "../../utils/otpEmailFormat";
+import redisClient from "../../utils/redis-client";
 
 const otpRepo = new OtpRepository();
 const userRepo = new UserRepository();
@@ -56,6 +57,15 @@ async function forgotPasswordOtpRequest(email: string) {
         logger.error(`Failed to send password reset email to: ${email}`);
         throw new ApiError(500, "Failed to send password reset email");
     }
+
+    const otpData = {
+        otp: hashedOtp,
+        reason: "password_reset",
+    };
+
+    // Store OTP and reason in Redis hash
+    await redisClient.hset(`otp:${user._id}`, otpData);
+    await redisClient.expire(`otp:${user._id}`, 300); // Expire in 5 minutes
 
     logger.info(`Password reset instructions sent successfully to: ${email}`);
     return { message: "Password reset instructions sent successfully" };

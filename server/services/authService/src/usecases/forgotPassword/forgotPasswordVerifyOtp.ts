@@ -4,10 +4,11 @@ import { ApiError } from "../../utils/ApiError";
 import { OtpAuth } from "../../utils/hashOtp";
 import { hashService } from "../../utils/hashService";
 import logger from "../../utils/logger";
+import redisClient from "../../utils/redis-client";
 
-const otpRepo = new OtpRepository();
-const userRepo = new UserRepository();
-const otpAuth = new OtpAuth();
+const userRepo = new UserRepository()
+const otpRepo = new OtpRepository()
+const otpAuth = new OtpAuth()
 const hashPassword = new hashService();
 
 async function forgotPasswordVerifyOtp(
@@ -25,38 +26,42 @@ async function forgotPasswordVerifyOtp(
         throw new ApiError(400, "User not verified");
     }
 
-    // Retrieve stored OTP document by email
-    const storeOtpDoc = await otpRepo.findOtpByEmail(email);
-    if (!storeOtpDoc) {
-        throw new ApiError(404, `OTP not found for email ${email}`);
+    // Retrieve OTP and reason (Redis first, then fallback to database)
+    const otpData = await redisClient.hgetall(`otp:${user._id}`);
+    const storedOtp = otpData?.otp || (await otpRepo.findOtpByEmail(email))?.otp;
+    const reason =
+        otpData?.reason || (await otpRepo.findOtpByEmail(email))?.otpReason;
+
+    if (!storedOtp || !reason) {
+        logger.warn(`OTP not found for email ${email}`);
+        throw new ApiError(404, "OTP not found");
     }
 
-    // Check OTP reason
-    if (storeOtpDoc.otpReason !== "password_reset") {
-        logger.warn(`OTP for email ${email} is not valid for password reset`);
+    if (reason !== "password_reset") {
+        logger.warn(`Invalid OTP reason for email: ${email}`);
         throw new ApiError(400, "Invalid OTP");
     }
 
-    // Compare the provided OTP with the hashed OTP in the database
-    const isOtpVerified = await otpAuth.compareOtp(otp, storeOtpDoc.otp);
+    // Verify OTP
+    const isOtpVerified = await otpAuth.compareOtp(otp, storedOtp);
     if (!isOtpVerified) {
+        logger.warn(`Invalid OTP provided for email: ${email}`);
         throw new ApiError(400, "Invalid OTP");
     }
 
-    // OTP verified successfully; delete it from database
+    // Clean up OTP from Redis or database
+    await redisClient.del(`otp:${user._id}`);
     await otpRepo.deleteOtp(email);
 
-    // remove existing refreshToken
-    await userRepo.removeRefreshToken(user._id as string)
-    
+    // Remove existing refreshToken
+    await userRepo.removeRefreshToken(user._id as string);
+
     // Hash the new password and update it
     const hashedNewPassword = await hashPassword.hashPassword(password);
     await userRepo.updateUserByEmail(email, { password: hashedNewPassword });
 
-
-    // Log success and return a response
-    logger.info(`OTP verified and password updated for email: ${email}`);
+    logger.info(`Password updated successfully for email: ${email}`);
     return { message: "OTP verification and password recovery successful" };
 }
 
-export default forgotPasswordVerifyOtp;
+export default forgotPasswordVerifyOtp

@@ -11,6 +11,7 @@ import { OtpAuth } from "../../utils/hashOtp";
 import { hashService } from "../../utils/hashService";
 import logger from "../../utils/logger";
 import fs from "fs/promises";
+import redisClient from "../../utils/redis-client";
 
 const userRepo = new UserRepository();
 const hashPassword = new hashService();
@@ -90,6 +91,15 @@ async function registerUser(
 
     const savedUser = await userRepo.saveUser(newUser);
     if (uploadedAvatar && avatarLocalPath) await cleanUpAvatar(avatarLocalPath);
+
+    const otpData = {
+        otp: hashedOtp,
+        reason: "email_verification",
+    };
+
+    // Store OTP and reason in Redis hash
+    await redisClient.hset(`otp:${savedUser._id}`, otpData);
+    await redisClient.expire(`otp:${savedUser._id}`, 300); // Expire in 5 minutes
 
     return savedUser;
 }
