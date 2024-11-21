@@ -11,7 +11,7 @@ import { OtpAuth } from "../../utils/hashOtp";
 import { hashService } from "../../utils/hashService";
 import logger from "../../utils/logger";
 import fs from "fs/promises";
-import redisClient from "../../utils/redis-client";
+import redisClient from "../../config/redis/redis-client";
 
 const userRepo = new UserRepository();
 const hashPassword = new hashService();

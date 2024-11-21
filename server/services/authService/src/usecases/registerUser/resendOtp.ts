@@ -6,7 +6,7 @@ import generateOtp from "../../utils/generateOtp";
 import { OtpAuth } from "../../utils/hashOtp";
 import emailFormat from "../../utils/otpEmailFormat";
 import logger from "../../utils/logger";
-import redisClient from "../../utils/redis-client";
+import redisClient from "../../config/redis/redis-client";
 
 const otpRepo = new OtpRepository();
 const userRepo = new UserRepository();
@@ -68,7 +68,7 @@ async function ResendOtp(email: string) {
         otp: hashedOtp,
         reason: "email_verification",
     };
-    
+
     await redisClient.hset(`otp:${user._id}`, otpData);
     await redisClient.expire(`otp:${user._id}`, 300); // Expire in 5 minutes
 

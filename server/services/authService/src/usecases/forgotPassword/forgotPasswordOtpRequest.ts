@@ -6,7 +6,7 @@ import generateOtp from "../../utils/generateOtp";
 import { OtpAuth } from "../../utils/hashOtp";
 import logger from "../../utils/logger";
 import emailFormat from "../../utils/otpEmailFormat";
-import redisClient from "../../utils/redis-client";
+import redisClient from "../../config/redis/redis-client";
 
 const otpRepo = new OtpRepository();
 const userRepo = new UserRepository();

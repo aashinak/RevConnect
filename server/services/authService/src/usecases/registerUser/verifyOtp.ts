@@ -3,7 +3,7 @@ import { OtpRepository } from "../../repository/otpRepository";
 import { ApiError } from "../../utils/ApiError";
 import { OtpAuth } from "../../utils/hashOtp";
 import logger from "../../utils/logger";
-import redisClient from "../../utils/redis-client";
+import redisClient from "../../config/redis/redis-client";
 
 const userRepo = new UserRepository();
 const otpRepo = new OtpRepository();
@@ -13,13 +13,16 @@ async function verifyOtp(otp: number, email: string) {
     // Retrieve user
     const user = await userRepo.findUserByEmail(email);
     if (!user) {
-        logger.warn(`Email verification attempt for non-existing user: ${email}`);
+        logger.warn(
+            `Email verification attempt for non-existing user: ${email}`
+        );
         throw new ApiError(404, "User not found");
     }
 
     // Retrieve OTP and reason (Redis first, then fallback to database)
     const otpData = await redisClient.hgetall(`otp:${user._id}`);
-    const storedOtp = otpData?.otp || (await otpRepo.findOtpByEmail(email))?.otp;
+    const storedOtp =
+        otpData?.otp || (await otpRepo.findOtpByEmail(email))?.otp;
     const reason =
         otpData?.reason || (await otpRepo.findOtpByEmail(email))?.otpReason;
 

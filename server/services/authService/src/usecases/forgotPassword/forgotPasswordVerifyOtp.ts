@@ -4,11 +4,11 @@ import { ApiError } from "../../utils/ApiError";
 import { OtpAuth } from "../../utils/hashOtp";
 import { hashService } from "../../utils/hashService";
 import logger from "../../utils/logger";
-import redisClient from "../../utils/redis-client";
+import redisClient from "../../config/redis/redis-client";
 
-const userRepo = new UserRepository()
-const otpRepo = new OtpRepository()
-const otpAuth = new OtpAuth()
+const userRepo = new UserRepository();
+const otpRepo = new OtpRepository();
+const otpAuth = new OtpAuth();
 const hashPassword = new hashService();
 
 async function forgotPasswordVerifyOtp(
@@ -28,7 +28,8 @@ async function forgotPasswordVerifyOtp(
 
     // Retrieve OTP and reason (Redis first, then fallback to database)
     const otpData = await redisClient.hgetall(`otp:${user._id}`);
-    const storedOtp = otpData?.otp || (await otpRepo.findOtpByEmail(email))?.otp;
+    const storedOtp =
+        otpData?.otp || (await otpRepo.findOtpByEmail(email))?.otp;
     const reason =
         otpData?.reason || (await otpRepo.findOtpByEmail(email))?.otpReason;
 
@@ -64,4 +65,4 @@ async function forgotPasswordVerifyOtp(
     return { message: "OTP verification and password recovery successful" };
 }
 
-export default forgotPasswordVerifyOtp
+export default forgotPasswordVerifyOtp;
