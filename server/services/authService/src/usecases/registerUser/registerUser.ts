@@ -12,6 +12,7 @@ import { hashService } from "../../utils/hashService";
 import logger from "../../utils/logger";
 import fs from "fs/promises";
 import redisClient from "../../config/redis/redis-client";
+import userProducer from "../../events/kafka/producers/userProducer";
 
 const userRepo = new UserRepository();
 const hashPassword = new hashService();
@@ -91,6 +92,14 @@ async function registerUser(
 
     const savedUser = await userRepo.saveUser(newUser);
     if (uploadedAvatar && avatarLocalPath) await cleanUpAvatar(avatarLocalPath);
+
+    const producerData = {
+        userId: savedUser._id as string,
+        name: savedUser.name,
+        email: savedUser.email,
+        avatar: savedUser.avatar as string,
+    };
+    await userProducer(producerData);
 
     const otpData = {
         otp: hashedOtp,
