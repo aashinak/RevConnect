@@ -2,7 +2,7 @@ import { producer } from "../../../config/kafka/kafkaConfig";
 import logger from "../../../utils/logger";
 
 interface UserCreatedEvent {
-    eventType: "USER_CREATED"; // Enforces the specific event type
+    eventType: "USER_CREATED";
     data: {
         userId: string;
         name: string;
@@ -11,61 +11,57 @@ interface UserCreatedEvent {
     };
 }
 
-const userProducer = async (event: UserCreatedEvent): Promise<void> => {
-    logger.info(
-        "Attempting to produce a message ::: authService ::: userProducer",
-        {
-            eventType: event.eventType,
-            userId: event.data.userId,
-        }
-    );
+const userProducer = async (data: UserCreatedEvent["data"]): Promise<void> => {
+    const eventPayload = {
+        eventType: "USER_CREATED",
+        data,
+    };
 
     try {
-        logger.debug("Connecting to Kafka producer...");
-        await producer.connect();
+        logger.info("Initiating Kafka producer process ::: authService ::: userProducer");
 
-        logger.debug("Sending message to topic: user-events", {
+        logger.info("Connecting to Kafka producer...");
+        await producer.connect();
+        logger.info("Kafka producer connected successfully.");
+
+        logger.info("Preparing to send message to Kafka topic...", {
             topic: "user-events",
             partitionKey: "USER_CREATED",
-            eventPayload: event,
+            payload: eventPayload,
         });
 
         await producer.send({
             topic: "user-events",
             messages: [
                 {
-                    key: "USER_CREATED", // Use the key provided as partition key
-                    value: JSON.stringify(event), // Serialize the event with type safety
+                    value: JSON.stringify(eventPayload),
                 },
             ],
         });
 
-        logger.info(
-            "Message sent successfully! ::: authService ::: userProducer",
-            {
-                topic: "user-events",
-                eventType: event.eventType,
-                userId: event.data.userId,
-            }
-        );
+        logger.info("Message successfully sent to Kafka topic ::: authService ::: userProducer", {
+            topic: "user-events",
+            eventType: "USER_CREATED",
+            userId: data.userId,
+            payloadSize: JSON.stringify(eventPayload).length,
+        });
     } catch (error: any) {
-        logger.error(
-            "Error while producing message to Kafka ::: authService ::: userProducer",
-            {
-                error: error.message,
-                stack: error.stack,
-                eventPayload: event,
-            }
-        );
+        logger.error("Error occurred while producing message to Kafka ::: authService ::: userProducer", {
+            errorMessage: error.message,
+            stackTrace: error.stack,
+            topic: "user-events",
+            eventPayload,
+        });
+        throw error; // Re-throw the error for the caller to handle
     } finally {
         try {
-            logger.debug("Disconnecting Kafka producer...");
+            logger.info("Disconnecting Kafka producer...");
             await producer.disconnect();
             logger.info("Kafka producer disconnected successfully.");
         } catch (disconnectError: any) {
-            logger.error("Error disconnecting Kafka producer", {
-                error: disconnectError.message,
-                stack: disconnectError.stack,
+            logger.error("Error disconnecting Kafka producer ::: authService ::: userProducer", {
+                errorMessage: disconnectError.message,
+                stackTrace: disconnectError.stack,
             });
         }
     }
