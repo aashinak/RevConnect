@@ -6,6 +6,6 @@ const port = process.env.PORT || 9000;
 
 connectDb().then(() => {
     app.listen(port, () => {
-        logger.info(`Server running at port ${port} 🚀`);
+        logger.info(`Server running at port ${port} 🚀 ::: ${process.env.SERVICE_NAME}`);
     });
 });
