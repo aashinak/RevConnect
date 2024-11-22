@@ -13,4 +13,4 @@ const startConsumers = async () => {
   }
 };
 
-startConsumers();
+export default startConsumers
