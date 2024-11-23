@@ -19,8 +19,8 @@ const UserSchema: Schema<IUser> = new Schema<IUser>(
 );
 
 UserSchema.methods.getPublicProfile = function () {
-  const { userId, name, avatar, bio } = this;
-  return { userId, name, avatar, bio };
+  const { userId, name, avatar, bio , gender} = this;
+  return { userId, name, avatar, bio , gender};
 };
 
 export const UserModel = mongoose.model<IUser>("User", UserSchema);
