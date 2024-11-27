@@ -25,6 +25,16 @@ async function registerUser(
     password: string,
     avatarLocalPath?: string
 ) {
+    const key = `user:registration:log:${email}`;
+    const initUser = await redisClient.get(key);
+    if (initUser) {
+        await cleanUpAvatar(avatarLocalPath as string);
+        logger.info(`Log exists for user ${email}`);
+        throw new ApiError(400, "Frequent call on registration");
+    }
+    const value = "User registration initiated";
+    const expiration = 20;
+    redisClient.set(key, value, "EX", expiration);
     // Check if user already exists
     const existingUser = await userRepo.findUserByEmail(email);
     if (existingUser) {
