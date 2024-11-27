@@ -41,7 +41,6 @@ const register = async (
     if (!avatar) {
         throw new ApiError(400, "Avatar file is required");
     }
-
     const user = await registerUser(name, email, password, avatar);
     if (!user) {
         logger.error(`User registration for email ${email}`);
@@ -221,7 +220,7 @@ const regenerateRefreshAndAccessTokens = async (
     const tokens = await regenerateRefreshToken(refreshToken);
     res.cookie("refreshToken", tokens.refreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
