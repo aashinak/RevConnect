@@ -159,4 +159,18 @@ export class UserRepository implements IUserRepository {
             throw new ApiError(500, "Failed to update user");
         }
     }
+
+    async findUserByName(username: string): Promise<IUser | null> {
+        try {
+            const user = await this.userModel.findOne({ username }).exec();
+            if (!user) {
+                return null;
+            }
+            return user;
+        } catch (error: any) {
+            logger.error(`Failed to find user by name ${username}: ${error.message}`);
+            throw new ApiError(500, `Failed to find user by name ${username}`);
+        }
+    }
+    
 }
