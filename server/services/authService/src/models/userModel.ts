@@ -5,6 +5,7 @@ import IUser from "../entities/IUser";
 const userSchema: Schema<IUser> = new Schema<IUser>(
     {
         name: { type: String, required: true, trim: true },
+        username: { type: String, required: true, trim: true, unique: true },
         email: {
             type: String,
             required: true,
@@ -18,7 +19,8 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
         provider: { type: String, required: true, enum: ["google", "email"] }, // Role management
         avatar: {
             type: String,
-            default: "https://example.com/default-avatar.png",
+            default:
+                "https://res.cloudinary.com/debbyomhm/image/upload/v1732688985/userAvatar/ucg4wqxtulvj6yamehhs.png",
         }, // Avatar with default value
         refreshToken: { type: String }, // Required field for refresh tokens
         isVerified: { type: Boolean, default: false }, // Email verification status
