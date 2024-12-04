@@ -1,10 +1,10 @@
 import { UserRepository } from '../../../repository/userRepository';
 import { ApiError } from '../../../utils/ApiError';
+import logger from '../../../utils/logger';
 
 interface userData {
     userId: string;
     name: string;
-    email: string;
     avatar: string;
 }
 const userRepo = new UserRepository()
@@ -21,15 +21,12 @@ async function userUpdateHandler(data: userData) {
       throw new ApiError(400, 'No fields to update');
     }
 
-    // Update the user data
+    // Update the user data    
     const updatedUser = await userRepo.updateUser(data.userId, updateData)
-
-    // Log or return the updated user
-    console.log('User updated successfully:', updatedUser);
+    if(updateData) logger.info("User updation completed")
     return updatedUser;
   } catch (error) {
-    console.error('Error updating user:', error);
-    throw error;
+    logger.error('Error updating user:', error);
   }
 }
 

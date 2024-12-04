@@ -11,6 +11,16 @@ export const userValidationRules = () => {
             .withMessage("Name is required and must not exceed 50 characters")
             .matches(/^[a-zA-Z\s]*$/)
             .withMessage("Name must only contain letters and spaces"),
+        body("username")
+            .trim()
+            .isString()
+            .withMessage("Username must be a string")
+            .isLength({ min: 1, max: 50 })
+            .withMessage(
+                "Username is required and must not exceed 50 characters"
+            )
+            .matches(/^[a-zA-Z]*$/)
+            .withMessage("Username must only contain letters and no spaces"),
 
         // Validate and sanitize the email
         body("email")

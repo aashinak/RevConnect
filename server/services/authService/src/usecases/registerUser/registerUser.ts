@@ -20,6 +20,7 @@ const hashOtp = new OtpAuth();
 const otpRepo = new OtpRepository();
 
 async function registerUser(
+    username: string,
     name: string,
     email: string,
     password: string,
@@ -28,13 +29,25 @@ async function registerUser(
     const key = `user:registration:log:${email}`;
     const initUser = await redisClient.get(key);
     if (initUser) {
+        if(avatarLocalPath){
         await cleanUpAvatar(avatarLocalPath as string);
+        }
         logger.info(`Log exists for user ${email}`);
         throw new ApiError(400, "Frequent call on registration");
     }
     const value = "User registration initiated";
     const expiration = 20;
     redisClient.set(key, value, "EX", expiration);
+
+    const existingUserName = await userRepo.findUserByName(username)
+    if (existingUserName) {
+        if (avatarLocalPath) {
+            await cleanUpAvatar(avatarLocalPath);
+        }
+        logger.warn(`User with email ${email} already exists`);
+        throw new ApiError(400, `User with username ${username} already exists`);
+    }
+
     // Check if user already exists
     const existingUser = await userRepo.findUserByEmail(email);
     if (existingUser) {
@@ -92,6 +105,7 @@ async function registerUser(
 
     // Create and save new user
     const newUser: IUser = {
+        username,
         name,
         email,
         provider: "email",
@@ -104,6 +118,7 @@ async function registerUser(
     if (uploadedAvatar && avatarLocalPath) await cleanUpAvatar(avatarLocalPath);
 
     const producerData = {
+        username,
         userId: savedUser._id as string,
         name: savedUser.name,
         email: savedUser.email,

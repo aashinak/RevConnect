@@ -60,7 +60,7 @@ async function loginWithGoogle(idToken: string) {
 
         // Case 2: User exists but is registered with a different provider (e.g., email/password)
         logger.warn(`Login attempt for email user: ${decodedInfo.email}`);
-        throw new ApiError(404, "Use your email and password to log in");
+        throw new ApiError(400, "Use your email and password to log in");
     } else {
         // Case 3: User does not exist in the system. Offer to create a new account
         logger.info(
@@ -68,6 +68,7 @@ async function loginWithGoogle(idToken: string) {
         );
 
         const newUser: IUser = {
+            username: decodedInfo.email.split('@')[0],
             email: decodedInfo.email,
             name: decodedInfo.name || decodedInfo.email, // Default name is email if not provided
             avatar: decodedInfo.picture || "", // Default avatar if not provided
@@ -88,7 +89,7 @@ async function loginWithGoogle(idToken: string) {
         );
 
         // Return the newly created user with tokens
-        return { savedUser, refreshToken, accessToken };
+        return { updatedUser:savedUser, refreshToken, accessToken };
     }
 }
 
