@@ -19,45 +19,68 @@ import { refreshTokenValidationRules } from "../validators/refreshTokenValidator
 import { otpEmailValidationRules } from "../validators/otpEmailValidator";
 import { emailValidationRules } from "../validators/emailValidator";
 import { otpEmailPasswordValidationRules } from "../validators/otpEmailPasswordValidator";
+import { createRateLimiter } from "../middlewares/rateLimiter";
 
 const router = Router();
 
 // Route for user registration with avatar upload
 router.post(
     "/register",
+    createRateLimiter({ max: 5 }),
     upload.single("avatar"),
     userValidationRules(),
     asyncHandler(register)
 );
 
-router.post("/login", userLoginValidationRules(), asyncHandler(login));
+router.post(
+    "/login",
+    createRateLimiter({ max: 8 }),
+    userLoginValidationRules(),
+    asyncHandler(login)
+);
 
 router.post(
     "/loginWithGoogle",
+    createRateLimiter({ max: 8 }),
     googleLoginValidationRules(),
     asyncHandler(loginWithGoogleId)
 );
 
-router.post("/logout", refreshTokenValidationRules(), asyncHandler(logout));
+router.post(
+    "/logout",
+    createRateLimiter({ max: 5 }),
+    refreshTokenValidationRules(),
+    asyncHandler(logout)
+);
 
 router.post(
     "/verifyOtp",
+    createRateLimiter({ max: 5 }),
+
     otpEmailValidationRules(),
     asyncHandler(verifyUserOtp)
 );
-router.post("/resendOtp", emailValidationRules(), asyncHandler(resendOtp));
+router.post(
+    "/resendOtp",
+    createRateLimiter({ max: 3 }),
+    emailValidationRules(),
+    asyncHandler(resendOtp)
+);
 router.post(
     "/forgotPasswordOtpReq",
+    createRateLimiter({ max: 5 }),
     emailValidationRules(),
     asyncHandler(forgotPasswordRequest)
 );
 router.post(
     "/forgotPasswordVerification",
+    createRateLimiter({ max: 5 }),
     otpEmailPasswordValidationRules(),
     asyncHandler(forgotPasswordVerification)
 );
 router.post(
     "/regenerateToken",
+    createRateLimiter({ max: 20 }),
     refreshTokenValidationRules(),
     asyncHandler(regenerateRefreshAndAccessTokens)
 );
