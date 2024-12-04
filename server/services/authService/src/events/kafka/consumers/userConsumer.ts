@@ -56,6 +56,7 @@ const userConsumer = async () => {
 
                         // Retry logic for processing the event
                         await retryWithBackoff(async () => {
+                            
                             // Simulate processing the message (e.g., update user in the database)
                             await userUpdateHandler(data); // update logic goes here
                         });
@@ -68,7 +69,7 @@ const userConsumer = async () => {
                     });
 
                     // Move failed message to Dead Letter Queue (DLQ) after retries are exhausted
-                    await dlqProducer(message); // Send to DLQ using the external DLQ service
+                    // await dlqProducer(message); // Send to DLQ using the external DLQ service
                 }
             },
         });
