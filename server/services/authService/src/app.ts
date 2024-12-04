@@ -6,7 +6,6 @@ import morgan from "morgan";
 import logger from "./utils/logger";
 import router from "./routes/authRoutes";
 import errorHandler from "./middlewares/errorHandler";
-import limiter from "./middlewares/rateLimiter";
 
 const app: Application = express();
 app.use(express.json());
@@ -38,7 +37,7 @@ app.use(
 );
 
 // Apply the rate limiter to all requests
-app.use(limiter);
+// app.use(limiter);
 
 // router
 app.use("/api/v1/auth", router);

@@ -28,7 +28,10 @@ const register = async (
         logger.warn(
             `Validation error ::: ${errors.array().map((error) => error.msg)}`
         );
-        cleanUpAvatar(avatar as string);
+        if (avatar) {
+            cleanUpAvatar(avatar as string);
+        }
+
         throw new ApiError(
             400,
             "Validation Error",
@@ -36,12 +39,18 @@ const register = async (
         );
     }
 
-    const { name, email, password } = req.body;
+    const { name, email, password, username } = req.body;
 
-    if (!avatar) {
-        throw new ApiError(400, "Avatar file is required");
-    }
-    const user = await registerUser(name, email, password, avatar);
+    // if (!avatar) {
+    //     throw new ApiError(400, "Avatar file is required");
+    // }
+    const user = await registerUser(
+        name,
+        username,
+        email,
+        password,
+        avatar
+    );
     if (!user) {
         logger.error(`User registration for email ${email}`);
         throw new ApiError(500, "User registration failed");
@@ -106,9 +115,10 @@ const loginWithGoogleId = async (
         email: updatedUser?.email,
         avatar: updatedUser?.avatar,
     };
+
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
@@ -217,6 +227,7 @@ const regenerateRefreshAndAccessTokens = async (
     }
 
     const refreshToken = req.cookies.refreshToken;
+
     const tokens = await regenerateRefreshToken(refreshToken);
     res.cookie("refreshToken", tokens.refreshToken, {
         httpOnly: true,
